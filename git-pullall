@@ -1,0 +1,36 @@
+#!/bin/sh
+
+set -e
+#set -x
+
+cur=`git symbolic-ref HEAD`
+case "$cur" in
+	refs/heads/*)
+		cur=${cur#refs/heads/}
+		;;
+	*)
+		echo >&2 "Not in a branch"
+		exit 1
+		;;
+esac
+git update-index -q --refresh
+
+if git diff-index --quiet --cached HEAD --ignore-submodules -- && git diff-files --quiet --ignore-submodules; then
+	stashed=false
+else
+	git stash save
+	stashed=true
+fi
+
+eval `git for-each-ref --shell --format='
+	b=%(refname);
+	b=${b#refs/heads/};
+	if git config branch.$b.merge >/dev/null && git config branch.$b.remote >/dev/null; then
+		git checkout "$b";
+		git pull;
+	fi;
+' refs/heads/`
+git checkout "$cur"
+if $stashed; then
+	git stash pop --index
+fi

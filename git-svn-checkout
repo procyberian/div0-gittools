@@ -1,0 +1,43 @@
+#!/bin/sh
+
+set -ex
+
+gitpath=$1
+case "$gitpath" in
+	/*)
+		;;
+	*)
+		gitpath="`pwd`/$gitpath"
+		;;
+esac
+shift
+
+svnroot=$1
+shift
+svnpath=$1
+shift
+
+
+mkdir -p "$gitpath"
+(
+	cd "$gitpath"
+	git init --bare
+	git --bare svn init "$@" "$svnroot"
+	case "$svnpath" in
+		.)
+			git --bare config svn-remote.svn.fetch "trunk:refs/remotes/trunk"
+			git --bare config svn-remote.svn.branches "branches/*:refs/remotes/branches/*"
+			git --bare config svn-remote.svn.tags "tags/*:refs/remotes/tags/*"
+			;;
+		*)
+			git --bare config svn-remote.svn.fetch "trunk/$svnpath:refs/remotes/trunk"
+			git --bare config svn-remote.svn.branches "branches/*/$svnpath:refs/remotes/branches/*"
+			git --bare config svn-remote.svn.tags "tags/*/$svnpath:refs/remotes/tags/*"
+			;;
+	esac
+	git --bare config remote.origin.url .
+	git --bare config       remote.origin.fetch "+refs/remotes/trunk:refs/heads/master"
+	git --bare config --add remote.origin.fetch "+refs/remotes/branches/*:refs/heads/*"
+	git --bare config --add remote.origin.fetch "+refs/remotes/tags/*:refs/tags/*"
+)
+git-svn-update "$gitpath"
