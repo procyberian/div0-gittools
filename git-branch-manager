@@ -143,10 +143,6 @@ sub unmerge_commit($)
 		$logcache = undef;
 		my $msg = backtick 'git', 'log', '-1', '--pretty=fuller', $r
 			or die "git-log: $!";
-		my $cmsg = "";
-		my $author = "";
-		my $email = "";
-		my $date = "";
 		for(split /\n/, $msg)
 		{
 			if(/^Author:\s*(.*)/)
