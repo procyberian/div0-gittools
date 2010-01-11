@@ -16,6 +16,5 @@ esac
 	git --bare svn fetch
 	git --bare fetch
 	git --bare update-server-info
-	git --bare push mirror --all || true
-	git --bare push mirror --tags || true
+	[ -x hooks/post-update ] && hooks/post-update
 )
