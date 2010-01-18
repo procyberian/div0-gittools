@@ -1,0 +1,121 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+my @filters = ();
+for(@ARGV)
+{
+	if(/^
+		(?<want>[-+])
+		s
+			(?<delimiter>.)
+			(?<search>.*?)
+			\k<delimiter>
+			(?<replace>.*)
+			\k<delimiter>
+	$/sx)
+	{
+		push @filters, {
+			search => $+{search},
+			replace => $+{replace},
+			want => $+{want} eq '+'
+		};
+	}
+	elsif(/^
+		(?<want>[-+])
+		(?:
+			m
+				(?<delimiter>.)
+			|
+			(?<delimiter>\/)
+		)
+			(?<search>.*?)
+			\k<delimiter>
+	$/sx)
+	{
+		push @filters, {
+			search => $+{search},
+			replace => undef,
+			want => $+{want} eq '+'
+		};
+	}
+	elsif(/^
+		(?<want>[-+])
+	$/sx)
+	{
+		push @filters, {
+			search => '^',
+			replace => undef,
+			want => $+{want} eq '+'
+		};
+	}
+	else
+	{
+		die "Usage: $0 filterexpression filterexpression..., where a filter expression is of the form +s/search/replace/, +m/search/, +, -s/search/replace/, -m/search/, -";
+	}
+}
+
+sub fillin($@)
+{
+	my ($str, @args) = @_;
+	$str =~ s{\\([1-9])|(\&)|(\\)\\}{
+		$1 ? $args[$1] : $2 ? $args[0] : $3
+	}ge;
+	return $str;
+}
+
+my $current_output = $ENV{output};
+sub filter($)
+{
+	my ($s) = @_;
+	for(@filters)
+	{
+		my ($search, $replace, $want) = ($_->{search}, $_->{replace}, $_->{want});
+		my $fn = $s;
+		if($fn =~ s/$search/defined $replace ? fillin $replace, $&, map { substr($s, $-[$_], $+[$_] - $-[$_]) } 0..(@+ - 1) : $&/se)
+		{
+			$fn = $s unless $want;
+			return ($fn, $want);
+		}
+	}
+	# nothing matched
+	return ($s, 0);
+}
+
+open my $infh, '-|', 'git', 'ls-files', '-s';
+my $idx = "";
+my $plus = 0;
+my $minus = 0;
+while(<$infh>)
+{
+	chomp;
+	/^(\d+) ([0-9a-f]+) (\d+)\t(.*)$/ or die "invalid index line: $_";
+	my ($mode, $hash, $stageno, $filename) = ($1, $2, $3, $4);
+	my ($filename_new, $want) = filter($filename);
+	if($want)
+	{
+		$idx .= "0 0000000000000000000000000000000000000000 $stageno\t$filename\n"
+			if $filename ne $filename_new;
+		$idx .= "$mode $hash $stageno\t$filename_new\n";
+		++$plus;
+	}
+	else
+	{
+		$idx .= "0 0000000000000000000000000000000000000000 $stageno\t$filename\n";
+		++$minus;
+	}
+}
+close $infh
+	or die "git-ls-files: $!";
+
+print "$plus:$minus\n";
+
+open my $outfh, ">", "/tmp/idxtest";
+print $outfh $idx;
+close $outfh;
+
+open my $outfh, '|-', 'git', 'update-index', '--index-info';
+print $outfh $idx;
+close $outfh
+	or die "git-update-index: $!";

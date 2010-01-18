@@ -27,7 +27,7 @@ eval `git for-each-ref --shell --format='
 	b=${b#refs/heads/};
 	if git config branch.$b.merge >/dev/null && git config branch.$b.remote >/dev/null; then
 		git checkout "$b";
-		git pull;
+		git pull || true;
 	fi;
 ' refs/heads/`
 git checkout "$cur"

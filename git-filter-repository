@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# expects a filter file of syntax like filter-index
+
+export filterfile="$1"
+git filter-branch --remap-to-ancestor --prune-empty --index-filter '
+	xargs -0r git filter-index < "$filterfile"
+' -- --all
+git for-each-ref --format="%(refname)" refs/original/ | xargs -n 1 -r git update-ref -d || true
+git reflog expire --expire=now --all
+git gc --prune=now --aggressive

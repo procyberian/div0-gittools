@@ -1,0 +1,46 @@
+#!/bin/sh
+
+set -ex
+
+d="$PWD"
+src=$1
+shift
+
+# expects command line options like
+#	bspfiles='s,^data/(?=.*(?:\.bsp|/lm_.*\.tga)$),,' \
+#	a_nonbsp=
+# i.e. like filter-index, but with reponame= instead of .
+
+repos=`for x in "$@"; do
+	case "$x" in
+		delete=*)
+			;;
+		*=*)
+			echo "${x%%=*}"
+			;;
+	esac
+done | sort -u`
+
+export filterfile=`mktemp`
+
+for r in $repos; do
+	rsync -vaSHP --delete "$src" "$r.git/"
+	cd "$r.git"
+	for x in "$@"; do
+		case "$x" in
+			*=*)
+				rr=${x%%=*}
+				f=${x#*=}
+				if [ x"$r" = x"$rr" ]; then
+					printf -- "+%s\0" "$f"
+				else
+					printf -- "-%s\0" "$f"
+				fi
+				;;
+		esac
+	done >"$filterfile"
+	git filter-repository "$filterfile"
+	cd "$d"
+done
+
+rm -f "$filterfile"
