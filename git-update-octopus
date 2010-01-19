@@ -1,0 +1,11 @@
+#!/bin/sh
+
+git log --format=raw | while IFS= read -r L; do
+	case "$L" in
+		'    Merge branches '*)
+			b=`echo "$L" | sed -e "s/[^']*'\?\([^']*\)'\?/\1 /g"`
+			git merge $b
+			break
+			;;
+	esac
+done
