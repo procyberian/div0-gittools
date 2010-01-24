@@ -160,7 +160,7 @@ sub unmerge_commit($)
 		}
 		open my $fh, '>', '.commitmsg'
 			or die ">.commitmsg: $!";
-		print $fh "UNMERGE\n$cmsg" . "::stable-branch::merge=$r\n"
+		print $fh "UNMERGE\n$cmsg" . "::stable-branch::unmerge=$r\n"
 			or die ">.commitmsg: $!";
 		close $fh
 			or die ">.commitmsg: $!";
