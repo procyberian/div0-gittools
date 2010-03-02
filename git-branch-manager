@@ -16,12 +16,12 @@ my %color =
 
 my %html_style =
 (
-	'' => "color: white; background-color: black",
-	'outstanding' => "color: white; background-color: yellow",
-	'unmerge' => "color: white; background-color: red",
-	'merge' => "color: white; background-color: green",
-	'base' => "color: white; background-color: lightblue",
-	'previous' => "color: white; background-color: blue",
+	'' => "color: black; background-color: black",
+	'outstanding' => "color: black; background-color: yellow",
+	'unmerge' => "color: black; background-color: red",
+	'merge' => "color: black; background-color: green",
+	'base' => "color: black; background-color: lightblue",
+	'previous' => "color: black; background-color: blue",
 );
 
 my %name =
@@ -70,7 +70,7 @@ my @datefilter = ();
 my $revprefix = "";
 if($datefilter eq 'mergebase')
 {
-	chomp($revprefix = check_defined "git-merge-base: $!", backtick 'git', 'merge-base', $master, "HEAD");
+	chomp($revprefix = check_defined "git-merge-base: $!", backtick 'git', 'merge-base', $master, $branch);
 	$revprefix .= "^..";
 }
 elsif($datefilter ne '')
@@ -271,7 +271,7 @@ sub parse_log()
 	}
 	$cur_commit = $cur_msg = undef;
 	my @commits = ();
-	for((split /\n/, check_defined "git-log: $!", backtick 'git', 'log', '--topo-order', '--reverse', '--pretty=fuller', @datefilter, "$revprefix"."HEAD"), undef)
+	for((split /\n/, check_defined "git-log: $!", backtick 'git', 'log', '--topo-order', '--reverse', '--pretty=fuller', @datefilter, "$revprefix$branch"), undef)
 	{
 		if(defined $cur_commit and (not defined $_ or /^commit (\S+)/))
 		{
@@ -481,7 +481,7 @@ sub opt_rebase($$)
 		die "PEBKAC: not initialized"
 			unless defined $l->{base};
 	}
-	my $msg = backtick 'git', 'log', '-1', '--pretty=fuller', @datefilter, 'HEAD'
+	my $msg = backtick 'git', 'log', '-1', '--pretty=fuller', @datefilter, $branch
 		or die "git-log: $!";
 	$msg =~ /^commit (\S+)/s
 		or die "Invalid git log output";
@@ -570,7 +570,8 @@ sub opt_list($$)
 		{
 			my ($action, $r) = @$_;
 			my $m = $l->{logmsg}->{$r};
-			printf "<tr style=\"%s\"><td>%s</td><td><a href=\"%s%s\">%s</a></td><td>%s</td></tr>\n", $html_style{$action}, $name{$action}, escapeHTML($r), escapeHTML($cgi_url), escapeHTML($r), escapeHTML($m);
+			my $m_short = join ' ', map { s/^    (?!git-svn-id)(.)/$1/ ? $_ : () } split /\n/, $m;
+			printf "<tr style=\"%s\"><td>%s</td><td><a href=\"%s%s\">%s</a></td><td style=\"white-space: pre\">%s</td></tr>\n", $html_style{$action}, $name{$action}, escapeHTML($cgi_url), escapeHTML($r), escapeHTML($r), escapeHTML($m_short);
 		}
 		print "</table>\n";
 	}
@@ -637,7 +638,7 @@ my $result = GetOptions(
 	"hardreset|H=s", handler sub { run_script ['hardreset', $_[1]]; },
 	"help|h", handler \&opt_help,
 	"histsize|s=i", \$histsize,
-	"cgi|c=s", \$cgi_url
+	"cgi=s", \$cgi_url
 );
 if(!$done)
 {
