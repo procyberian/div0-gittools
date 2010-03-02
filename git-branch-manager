@@ -14,6 +14,16 @@ my %color =
 	'previous' => "\e[34m",
 );
 
+my %html_style =
+(
+	'' => "color: white; background-color: black",
+	'outstanding' => "color: white; background-color: yellow",
+	'unmerge' => "color: white; background-color: red",
+	'merge' => "color: white; background-color: green",
+	'base' => "color: white; background-color: lightblue",
+	'previous' => "color: white; background-color: blue",
+);
+
 my %name =
 (
 	'outstanding' => "OUTSTANDING",
@@ -47,9 +57,13 @@ sub run(@)
 }
 
 my $width = ($ENV{COLUMNS} || backtick 'tput', 'cols' || 80);
-chomp(my $branch = backtick 'git', 'symbolic-ref', 'HEAD');
-	$branch =~ s/^refs\/heads\///
-		or die "Not in a branch";
+my $branch = $ENV{GIT_BRANCH};
+if(not $branch)
+{
+	chomp($branch = backtick 'git', 'symbolic-ref', 'HEAD');
+		$branch =~ s/^refs\/heads\///
+			or die "Not in a branch";
+}
 chomp(my $master = (backtick 'git', 'config', '--get', "branch-manager.$branch.master" or 'master'));
 chomp(my $datefilter = (backtick 'git', 'config', '--get', "branch-manager.$branch.startdate" or ''));
 my @datefilter = ();
@@ -492,7 +506,19 @@ sub opt_rebase($$)
 	};
 }
 
+sub escapeHTML {
+         my ($toencode,$newlinestoo) = @_;
+         return undef unless defined($toencode);
+         $toencode =~ s{&}{&amp;}gso;
+         $toencode =~ s{<}{&lt;}gso;
+         $toencode =~ s{>}{&gt;}gso;
+	 $toencode =~ s{"}{&quot;}gso;
+         return $toencode;
+}
+
+
 my $histsize = 20;
+my $cgi_url = undef;
 sub opt_list($$)
 {
 	++$done;
@@ -537,13 +563,27 @@ sub opt_list($$)
 		my %seen = ();
 		@l = reverse grep { !$seen{$_->[1]}++ && !$l->{bitmap}->[$l->{order_h}->{$_->[1]}] } reverse map { [$_->[1], $_->[2]] } sort { $l->{order_h}{$a->[2]} <=> $l->{order_h}{$b->[2]} or $a->[0] <=> $b->[0] } map { [$_, $l[$_]->[0], $l[$_]->[1]] } 0..(@l-1);
 	}
-	for(@l)
+	if(defined $cgi_url)
 	{
-		my ($action, $r) = @$_;
-		my $m = $l->{logmsg}->{$r};
-		my $m_short = join ' ', map { s/^    (?!git-svn-id)(.)/$1/ ? $_ : () } split /\n/, $m;
-		$m_short = substr $m_short, 0, $width - 11 - 1 - 40 - 1;
-		printf "%s%-11s%s %s %s\n", $color{$action}, $name{$action}, $color{''}, $r, $m_short;
+		print "Content-Type: text/html\n\n<table border>\n";
+		for(@l)
+		{
+			my ($action, $r) = @$_;
+			my $m = $l->{logmsg}->{$r};
+			printf "<tr style=\"%s\"><td>%s</td><td><a href=\"%s%s\">%s</a></td><td>%s</td></tr>\n", $html_style{$action}, $name{$action}, escapeHTML($r), escapeHTML($cgi_url), escapeHTML($r), escapeHTML($m);
+		}
+		print "</table>\n";
+	}
+	else
+	{
+		for(@l)
+		{
+			my ($action, $r) = @$_;
+			my $m = $l->{logmsg}->{$r};
+			my $m_short = join ' ', map { s/^    (?!git-svn-id)(.)/$1/ ? $_ : () } split /\n/, $m;
+			$m_short = substr $m_short, 0, $width - 11 - 1 - 40 - 1;
+			printf "%s%-11s%s %s %s\n", $color{$action}, $name{$action}, $color{''}, $r, $m_short;
+		}
 	}
 }
 
@@ -596,7 +636,8 @@ my $result = GetOptions(
 	"reset|R=s", handler sub { run_script ['reset', $_[1]]; },
 	"hardreset|H=s", handler sub { run_script ['hardreset', $_[1]]; },
 	"help|h", handler \&opt_help,
-	"histsize|s=i", \$histsize
+	"histsize|s=i", \$histsize,
+	"cgi|c=s", \$cgi_url
 );
 if(!$done)
 {
