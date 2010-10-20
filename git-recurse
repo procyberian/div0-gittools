@@ -72,6 +72,7 @@ processargs()
 		fi
 		set -- "$@" "`processarg "$X"`"
 	done
+	echo >&2 "In `pwd`: $*"
 	"$@"
 }
 
