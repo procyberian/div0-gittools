@@ -79,16 +79,19 @@ processargs()
 	"$@"
 }
 
+# save stdin
+exec 3<&0
+
 # recurse through all sub-repos
 status=0
 # TODO is there a better way to identify all sub-repos?
-for GITDIR in `find . -type d -name \*.git -prune`; do
+find . -type d -name \*.git -prune | while IFS= read -r GITDIR; do
 	# TODO I would LIKE to do this, but then some commands (like pull) fail
 	#export GIT_DIR="$GITDIR"
 	#export GIT_WORK_TREE="${GITDIR%/.git}"
 	# so I will have to chdir instead
 
-	( cd "$GITDIR/.." && processargs git "$@" )
+	( cd "$GITDIR/.." && processargs git "$@" <&3 3<&- ) # use restored stdin
 	if [ "$?" -gt "$status" ]; then
 		status=$?
 	fi
