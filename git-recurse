@@ -3,6 +3,9 @@
 SEPARATOR=@@
 
 # TODO this logic should probably rather be in rev-parse itself
+# what it does:
+#   whenever an expression foo@@bar is used as an argument
+#   it checks whether foo is a valid reference, and if not, bar is used instead
 processarg()
 {
 	prefix=
@@ -73,6 +76,16 @@ processargs()
 }
 
 # recurse through all sub-repos
-find . -type d -name \*.git | while IFS= read -r GITDIR; do
-	processargs git --git-dir="$GITDIR" --work-tree="${GITDIR%/.git}" "$@"
+status=0
+for GITDIR in `find . -type d -name \*.git`; do
+	# TODO I would LIKE to do this, but then some commands (like pull) fail
+	#export GIT_DIR="$GITDIR"
+	#export GIT_WORK_TREE="${GITDIR%/.git}"
+	# so I will have to chdir instead
+
+	( cd "$GITDIR/.." && processargs git "$@" )
+	if [ "$?" -gt "$status" ]; then
+		status=$?
+	fi
 done
+exit "$status"
