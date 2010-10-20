@@ -1,0 +1,78 @@
+#!/bin/sh
+
+SEPARATOR=@@
+
+# TODO this logic should probably rather be in rev-parse itself
+processarg()
+{
+	prefix=
+	suffix=
+	case "$1" in
+		*..*)
+			first=${1%%..*}
+			rest=${1#*..}
+			first=`processarg "$first"`
+			rest=`processarg "$rest"`
+			echo "$first..$rest"
+			;;
+		*@\{*)
+			first=${1%%@\{*}
+			rest=${1#*@\{}
+			first=`processarg "$first"`
+			echo "$first@{$rest"
+			;;
+		*^*)
+			first=${1%%^*}
+			rest=${1#*^}
+			first=`processarg "$first"`
+			echo "$first^$rest"
+			;;
+		*~*)
+			first=${1%%~*}
+			rest=${1#*~}
+			first=`processarg "$first"`
+			echo "$first~$rest"
+			;;
+		*:*)
+			first=${1%%:*}
+			rest=${1#*:}
+			first=`processarg "$first"`
+			echo "$first:$rest"
+			;;
+		^*)
+			first=${1#^}
+			first=`processarg "$first"`
+			echo "^$first"
+			;;
+		*$SEPARATOR*)
+			first=${1%%$SEPARATOR*}
+			rest=${1#*$SEPARATOR}
+			if git rev-parse "$first" >/dev/null 2>&1; then
+				echo "$first"
+			else
+				processarg "$rest"
+			fi
+			;;
+		*)
+			echo "$1"
+			;;
+	esac
+}
+processargs()
+{
+	first=true
+	for X in "$@"; do
+		if $first; then
+			first=false
+			# clear arg list
+			set --
+		fi
+		set -- "$@" "`processarg "$X"`"
+	done
+	"$@"
+}
+
+# recurse through all sub-repos
+find . -type d -name \*.git | while IFS= read -r GITDIR; do
+	processargs git --git-dir="$GITDIR" --work-tree="${GITDIR%/.git}" "$@"
+done
