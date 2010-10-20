@@ -81,7 +81,8 @@ processargs()
 
 # recurse through all sub-repos
 status=0
-for GITDIR in `find . -type d -name \*.git`; do
+# TODO is there a better way to identify all sub-repos?
+for GITDIR in `find . -type d -name \*.git -prune`; do
 	# TODO I would LIKE to do this, but then some commands (like pull) fail
 	#export GIT_DIR="$GITDIR"
 	#export GIT_WORK_TREE="${GITDIR%/.git}"
