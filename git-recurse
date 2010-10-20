@@ -11,6 +11,7 @@ processarg()
 	prefix=
 	suffix=
 	case "$1" in
+		# have to detect some rev-parse syntax
 		*..*)
 			first=${1%%..*}
 			rest=${1#*..}
@@ -47,6 +48,7 @@ processarg()
 			first=`processarg "$first"`
 			echo "^$first"
 			;;
+		# handle foo@@bar so that if foo exists, foo stays, otherwise bar
 		*$SEPARATOR*)
 			first=${1%%$SEPARATOR*}
 			rest=${1#*$SEPARATOR}
@@ -56,6 +58,7 @@ processarg()
 				processarg "$rest"
 			fi
 			;;
+		# other args stay as is
 		*)
 			echo "$1"
 			;;
