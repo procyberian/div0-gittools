@@ -78,6 +78,9 @@ elsif($datefilter ne '')
 	@datefilter = "--since=$datefilter";
 }
 
+# if set, don't actually merge/revert changes, just mark as such
+my $skip = 0;
+
 our $do_commit = 1;
 my $logcache = undef;
 sub reset_to_commit($)
@@ -135,9 +138,12 @@ sub merge_commit($)
 	local $ENV{GIT_AUTHOR_NAME} = $author;
 	local $ENV{GIT_AUTHOR_EMAIL} = $email;
 	local $ENV{GIT_AUTHOR_DATE} = $date;
-	run 'git', 'cherry-pick', '-n', $r
-		or run 'git', 'mergetool'
-			or die "git-mergetool: $!";
+	if(!$skip)
+	{
+		run 'git', 'cherry-pick', '-n', $r
+			or run 'git', 'mergetool'
+				or die "git-mergetool: $!";
+	}
 	if($do_commit)
 	{
 		run 'git', 'commit', '-F', '.commitmsg'
@@ -182,9 +188,12 @@ sub unmerge_commit($)
 	local $ENV{GIT_AUTHOR_NAME} = $author;
 	local $ENV{GIT_AUTHOR_EMAIL} = $email;
 	local $ENV{GIT_AUTHOR_DATE} = $date;
-	run 'git', 'revert', '-n', $r
-		or run 'git', 'mergetool'
-			or die "git-mergetool: $!";
+	if(!$skip)
+	{
+		run 'git', 'revert', '-n', $r
+			or run 'git', 'mergetool'
+				or die "git-mergetool: $!";
+	}
 	if($do_commit)
 	{
 		run 'git', 'commit', '-F', '.commitmsg'
@@ -632,6 +641,7 @@ my $result = GetOptions(
 	"log|l:s", handler \&opt_list,
 	"outstanding|o:s", handler \&opt_list,
 	"rebase|b=s", handler \&opt_rebase,
+	"skip", handler \$skip,
 	"merge|m=s{,}", handler sub { run_script ['merge', $_[1]]; },
 	"unmerge|u=s{,}", handler sub { run_script ['unmerge', $_[1]]; },
 	"reset|R=s", handler sub { run_script ['reset', $_[1]]; },
