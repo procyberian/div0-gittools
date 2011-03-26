@@ -167,9 +167,10 @@ sub unmerge_commit($)
 			or die "git-log: $!";
 		for(split /\n/, $msg)
 		{
-			if(/^Author:\s*(.*)/)
+			if(/^Author:\s*(.*) <(.*)>/)
 			{
 				$author = $1;
+				$email = $2;
 			}
 			elsif(/^AuthorDate:\s*(.*)/)
 			{
