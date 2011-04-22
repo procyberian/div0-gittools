@@ -244,9 +244,9 @@ sub merge_commit($)
 	}
 	if($do_commit)
 	{
-		run 'git', 'commit', '-F', '.commitmsg'
+		run 'git', 'commit', '--allow-empty', '-F', '.commitmsg'
 			or (run 'git', 'mergetool'
-				and run 'git', 'commit', '-F', '.commitmsg')
+				and run 'git', 'commit', '--allow-empty', '-F', '.commitmsg')
 					or die "git-commit: $!";
 	}
 }
@@ -297,9 +297,9 @@ sub unmerge_commit($)
 	}
 	if($do_commit)
 	{
-		run 'git', 'commit', '-F', '.commitmsg'
+		run 'git', 'commit', '--allow-empty', '-F', '.commitmsg'
 			or (run 'git', 'mergetool'
-				and run 'git', 'commit', '-F', '.commitmsg')
+				and run 'git', 'commit', '--allow-empty', '-F', '.commitmsg')
 					or die "git-commit: $!";
 	}
 }
