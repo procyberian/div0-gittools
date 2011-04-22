@@ -795,6 +795,8 @@ my $result = GetOptions(
 	"skip", handler \$skip,
 	"merge|m=s{,}", handler sub { run_script ['merge', $_[1]]; },
 	"unmerge|u=s{,}", handler sub { run_script ['unmerge', $_[1]]; },
+	"reject|r=s{,}", handler sub { run_script ['reject', $_[1]]; },
+	"unreject|U=s{,}", handler sub { run_script ['unreject', $_[1]]; },
 	"reset|R=s", handler sub { run_script ['reset', $_[1]]; },
 	"hardreset|H=s", handler sub { run_script ['hardreset', $_[1]]; },
 	"help|h", handler \&opt_help,
