@@ -137,7 +137,7 @@ sub reject_commit($)
 		}
 		open my $fh, '>', '.commitmsg'
 			or die ">.commitmsg: $!";
-		print $fh "$cmsg" . "::stable-branch::reject=$r\n"
+		print $fh "REJECT\n$cmsg" . "::stable-branch::reject=$r\n"
 			or die ">.commitmsg: $!";
 		close $fh
 			or die ">.commitmsg: $!";
@@ -183,7 +183,7 @@ sub unreject_commit($)
 		}
 		open my $fh, '>', '.commitmsg'
 			or die ">.commitmsg: $!";
-		print $fh "$cmsg" . "::stable-branch::unreject=$r\n"
+		print $fh "UNREJECT\n$cmsg" . "::stable-branch::unreject=$r\n"
 			or die ">.commitmsg: $!";
 		close $fh
 			or die ">.commitmsg: $!";
@@ -320,7 +320,7 @@ sub rebase_log($$)
 		{
 			unshift @rlog, ['reject', $log->{order_a}[$_]];
 		}
-		elsif(!$log->{bitmap}[$_])
+		elsif($log->{bitmap}[$_] == 0)
 		{
 			unshift @rlog, ['unmerge', $log->{order_a}[$_]];
 		}
