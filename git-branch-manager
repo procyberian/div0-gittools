@@ -391,7 +391,7 @@ sub parse_log()
 	}
 	$cur_commit = $cur_msg = undef;
 	my @commits = ();
-	for((split /\n/, check_defined "git-log: $!", backtick 'git', 'log', '--no-merges', '--topo-order', '--reverse', '--pretty=fuller', @datefilter, "$revprefix$branch"), undef)
+	for((split /\n/, check_defined "git-log: $!", backtick 'git', 'log', '--topo-order', '--reverse', '--pretty=fuller', @datefilter, "$revprefix$branch"), undef)
 	{
 		if(defined $cur_commit and (not defined $_ or /^commit (\S+)/))
 		{
