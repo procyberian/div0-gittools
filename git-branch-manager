@@ -416,27 +416,33 @@ sub parse_log()
 		my $data = $logmsg{$_};
 		if($data =~ /::stable-branch::unmerge=(\S+)/)
 		{
+			next if not defined $history{$1};
 			push @logdata, ['unmerge', $1];
 		}
 		elsif($data =~ /::stable-branch::merge=(\S+)/)
 		{
+			next if not defined $history{$1};
 			push @logdata, ['merge', $1];
 		}
 		elsif($data =~ /::stable-branch::reject=(\S+)/)
 		{
+			next if not defined $history{$1};
 			push @logdata, ['reject', $1];
 		}
 		elsif($data =~ /::stable-branch::unreject=(\S+)/)
 		{
+			next if not defined $history{$1};
 			push @logdata, ['unreject', $1];
 		}
 		elsif($data =~ /::stable-branch::reset=(\S+)/)
 		{
+			next if not defined $history{$1};
 			@logdata = ();
 			$base = $1;
 		}
 		elsif($data =~ /::stable-branch::rebase=(\S+)/)
 		{
+			next if not defined $history{$1};
 			$lastrebase->[0] = 'ignore'
 				if defined $lastrebase;
 			push @logdata, ($lastrebase = ['rebase', $1]);
