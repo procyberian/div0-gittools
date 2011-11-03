@@ -74,7 +74,8 @@ for commit in $allreverted; do
 		continue
 	fi
 	if revertedby=`whatreverts "$commit" | grep .`; then
-		echo "$commit got reverted by $revertedby"
+		echo "$commit got reverted by $revertedby:"
+		git log -1 $revertedby
 	fi
 done
 
