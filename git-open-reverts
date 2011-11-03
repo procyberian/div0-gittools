@@ -1,0 +1,81 @@
+#!/bin/sh
+
+t=`mktemp`
+git log --pretty=raw "$@" > "$t"
+
+allreverted=
+reverts()
+{
+	commit=$1
+	reverted=$2
+	eval "reverts_in_$commit=\"\$reverts_in_$commit $reverted\""
+	eval "reverts_$reverted=\"\$reverts_$reverted $commit\""
+	allreverted="$allreverted $reverted"
+	#echo >&2 "Found: $commit reverts $reverted"
+}
+
+# in the tree of reverters, look for any leaves of even depth
+
+reverters()
+{
+	eval "echo \$reverts_$1"
+}
+
+whatreverts_inverted()
+{
+	local status reverter printme
+	status=false
+	printme=true
+	for reverter in `reverters "$1"`; do
+		if ! whatreverts "$reverter"; then
+			status=true
+		fi
+		printme=false
+	done
+	if $printme; then
+		echo "$1"
+	fi
+	$status
+}
+
+whatreverts()
+{
+	local status reverter
+	status=false
+	for reverter in `reverters "$1"`; do
+		if ! whatreverts_inverted "$reverter"; then
+			status=true
+		fi
+	done
+	$status
+}
+
+# pass 1: find which commit reverts which
+while IFS= read -r L; do
+	case "$L" in
+		"commit "*)
+			commit="${L#commit }"
+			;;
+		"    This reverts commit "*)
+			reverted=${L#    This reverts commit }
+			reverted=${reverted%.}
+			reverts "$commit" "$reverted"
+			;;
+	esac
+done < "$t"
+
+# pass 2: for all reverted commits, find their status and their latest revert
+for commit in $allreverted; do
+	if eval "[ -n \"\$seen_$commit\" ]"; then
+		continue
+	fi
+	eval "seen_$commit=1"
+	if eval "[ -n \"\$reverts_in_$commit\" ]"; then
+		continue
+	fi
+	if revertedby=`whatreverts "$commit" | grep .`; then
+		echo "$commit got reverted by $revertedby"
+	fi
+done
+
+rm -f "$t"
