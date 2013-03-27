@@ -1,0 +1,47 @@
+#!/bin/sh
+
+# situation: work tree is unknown rev
+# arguments: git rev-list arguments
+# we now identify the one revision with least differences
+
+case "$1" in
+	--cached)
+		use_worktree=false
+		shift
+		;;
+	*)
+		use_worktree=true
+		;;
+esac
+
+diffopts="-M -C"
+
+if $use_worktree; then
+	echo >&2 "Saving index..."
+	oldindex=`git write-tree`
+	# set up resetting
+	trap 'echo >&2 "Restoring index..."; git reset "$oldindex" .' EXIT
+	trap 'exit 1' INT TERM
+
+	echo >&2 "Creating index..."
+	git add -A
+fi
+
+echo >&2 "Listing candidates..."
+allrevs=`git rev-list "$@"`
+
+echo >&2 "Evaluating candidates..."
+bestrev=
+bestrevscore=
+for rev in $allrevs; do
+	score=`git diff $diffopts --cached "$rev" | wc -l`
+	if [ -z "$bestrevscore" ] || [ "$score" -lt "$bestrevscore" ]; then
+		echo >&2 "Improved to $rev (score: $score)"
+		bestrev=$rev
+		bestrevscore=$score
+	fi
+done
+echo >&2 "Done."
+
+echo "$bestrev"
+git diff $diffopts --cached "$bestrev" >&2
