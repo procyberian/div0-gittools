@@ -13,7 +13,7 @@ usage()
 	echo "closest match."
 	echo
 	echo "Example: $0 --cached v1.0..HEAD"
-	echo "Compares current work tree to all revisions between v1.0 and HEAD,"
+	echo "Compares current index to all revisions between v1.0 and HEAD,"
 	echo "and identifies the closest match."
 }
 
