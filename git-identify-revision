@@ -61,6 +61,9 @@ for rev in $allrevs; do
 		echo >&2 "Improved to $rev (score: $score)"
 		bestrev=$rev
 		bestrevscore=$score
+		if [ $score -eq 0 ]; then
+			break
+		fi
 	fi
 done
 echo >&2 "Done."
