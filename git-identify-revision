@@ -4,15 +4,37 @@
 # arguments: git rev-list arguments
 # we now identify the one revision with least differences
 
+usage()
+{
+	echo "Usage: $0 [--cached] git-rev-list args..."
+	echo
+	echo "Example: $0 --all"
+	echo "Compares current work tree to all revisions, and identifies the"
+	echo "closest match."
+	echo
+	echo "Example: $0 --cached v1.0..HEAD"
+	echo "Compares current work tree to all revisions between v1.0 and HEAD,"
+	echo "and identifies the closest match."
+}
+
 case "$1" in
 	--cached)
 		use_worktree=false
 		shift
 		;;
+	--help|-h)
+		usage
+		exit 0
+		;;
 	*)
 		use_worktree=true
 		;;
 esac
+
+if [ $# = 0 ]; then
+	usage >&2
+	exit 1
+fi
 
 diffopts="-M -C"
 
