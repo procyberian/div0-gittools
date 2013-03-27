@@ -68,5 +68,9 @@ for rev in $allrevs; do
 done
 echo >&2 "Done."
 
+if [ -z "$bestrevscore" ]; then
+	exit 1
+fi
+
 echo "$bestrev"
 git diff $diffopts --cached "$bestrev" >&2
